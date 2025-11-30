@@ -1,5 +1,5 @@
 #!/bin/bash
-set -e
+set -euo pipefail
 
 BROKER_HOST="{{ okno_mqtt_broker_host }}"
 BROKER_PORT={{ okno_mqtt_broker_port }}
@@ -8,21 +8,37 @@ TOPIC_TEMP_WEWN="{{ okno_mqtt_topic_temp_wewn }}"
 TOPIC_TEMP_ZEWN="{{ okno_mqtt_topic_temp_zewn }}"
 TOPIC_OKNO="{{ okno_mqtt_topic_okno }}"
 
-read_temp_wewn() {
-  echo "23.5"
+VALUE_TEMP_WEWN_FILE="{{ okno_mqtt_file_temp_wewn }}"
+VALUE_TEMP_ZEWN_FILE="{{ okno_mqtt_file_temp_zewn }}"
+VALUE_OKNO_FILE="{{ okno_mqtt_file_okno }}"
+
+DEFAULT_TEMP_WEWN="{{ okno_mqtt_default_temp_wewn }}"
+DEFAULT_TEMP_ZEWN="{{ okno_mqtt_default_temp_zewn }}"
+DEFAULT_OKNO="{{ okno_mqtt_default_okno }}"
+
+read_value() {
+  local file_path="$1"
+  local description="$2"
+  local fallback="$3"
+
+  if [[ -r "$file_path" ]]; then
+    local value
+    value="$(tail -n 1 "$file_path" | tr -d '\r')"
+    if [[ -n "$value" ]]; then
+      echo "$value"
+      return 0
+    fi
+    echo "[WARN] Plik $description jest pusty, uzywam wartosci domyslnej $fallback" >&2
+  else
+    echo "[WARN] Brak pliku $description ($file_path), uzywam wartosci domyslnej $fallback" >&2
+  fi
+
+  echo "$fallback"
 }
 
-read_temp_zewn() {
-  echo "5.2"
-}
-
-read_okno_state() {
-  echo "1"
-}
-
-temp_wewn="$(read_temp_wewn)"
-temp_zewn="$(read_temp_zewn)"
-okno_state="$(read_okno_state)"
+temp_wewn="$(read_value "$VALUE_TEMP_WEWN_FILE" "temp_wewn" "$DEFAULT_TEMP_WEWN")"
+temp_zewn="$(read_value "$VALUE_TEMP_ZEWN_FILE" "temp_zewn" "$DEFAULT_TEMP_ZEWN")"
+okno_state="$(read_value "$VALUE_OKNO_FILE" "okno_stan" "$DEFAULT_OKNO")"
 
 echo "[PUB] $TOPIC_TEMP_WEWN -> $temp_wewn"
 mosquitto_pub -h "$BROKER_HOST" -p "$BROKER_PORT" -t "$TOPIC_TEMP_WEWN" -m "$temp_wewn"

@@ -9,6 +9,14 @@ okno_mqtt_topic_temp_wewn: "czujnik/okno/temperatura/wewn"
 okno_mqtt_topic_temp_zewn: "czujnik/okno/temperatura/zewn"
 okno_mqtt_topic_okno: "okno/zamkniete"
 
+okno_mqtt_file_temp_wewn: "{{ okno_mqtt_project_dir }}/temp_wewn"
+okno_mqtt_file_temp_zewn: "{{ okno_mqtt_project_dir }}/temp_zewn"
+okno_mqtt_file_okno: "{{ okno_mqtt_project_dir }}/okno_stan"
+
+okno_mqtt_default_temp_wewn: "23.5"
+okno_mqtt_default_temp_zewn: "5.2"
+okno_mqtt_default_okno: "1"
+
 okno_mqtt_publish_service: "mqtt-okno-publish.service"
 okno_mqtt_publish_timer: "mqtt-okno-publish.timer"
 okno_mqtt_sub_service: "mqtt-okno-sub.service"

@@ -84,6 +84,14 @@ okno_mqtt_topic_temp_wewn: "czujnik/okno/temperatura/wewn"
 okno_mqtt_topic_temp_zewn: "czujnik/okno/temperatura/zewn"
 okno_mqtt_topic_okno: "okno/zamkniete"   # 1 = zamkniete, 0 = otwarte
 
+okno_mqtt_file_temp_wewn: "{{ okno_mqtt_project_dir }}/temp_wewn"
+okno_mqtt_file_temp_zewn: "{{ okno_mqtt_project_dir }}/temp_zewn"
+okno_mqtt_file_okno: "{{ okno_mqtt_project_dir }}/okno_stan"
+
+okno_mqtt_default_temp_wewn: "23.5"
+okno_mqtt_default_temp_zewn: "5.2"
+okno_mqtt_default_okno: "1"
+
 okno_mqtt_publish_service: "mqtt-okno-publish.service"
 okno_mqtt_publish_timer: "mqtt-okno-publish.timer"
 okno_mqtt_sub_service: "mqtt-okno-sub.service"
@@ -192,7 +200,7 @@ okno_mqtt_sub_service: "mqtt-okno-sub.service"
 
 ```bash
 #!/bin/bash
-set -e
+set -euo pipefail
 
 BROKER_HOST="{{ okno_mqtt_broker_host }}"
 BROKER_PORT={{ okno_mqtt_broker_port }}
@@ -201,26 +209,37 @@ TOPIC_TEMP_WEWN="{{ okno_mqtt_topic_temp_wewn }}"
 TOPIC_TEMP_ZEWN="{{ okno_mqtt_topic_temp_zewn }}"
 TOPIC_OKNO="{{ okno_mqtt_topic_okno }}"   # 1 = zamkniete, 0 = otwarte
 
-# ====== TUTAJ PODMIENISZ NA PRAWDZIWE ODCZYTY ======
+VALUE_TEMP_WEWN_FILE="{{ okno_mqtt_file_temp_wewn }}"
+VALUE_TEMP_ZEWN_FILE="{{ okno_mqtt_file_temp_zewn }}"
+VALUE_OKNO_FILE="{{ okno_mqtt_file_okno }}"
 
-read_temp_wewn() {
-  echo "23.5"
+DEFAULT_TEMP_WEWN="{{ okno_mqtt_default_temp_wewn }}"
+DEFAULT_TEMP_ZEWN="{{ okno_mqtt_default_temp_zewn }}"
+DEFAULT_OKNO="{{ okno_mqtt_default_okno }}"
+
+read_value() {
+  local file_path="$1"
+  local description="$2"
+  local fallback="$3"
+
+  if [[ -r "$file_path" ]]; then
+    local value
+    value="$(tail -n 1 "$file_path" | tr -d '\r')"
+    if [[ -n "$value" ]]; then
+      echo "$value"
+      return 0
+    fi
+    echo "[WARN] Plik $description jest pusty, uzywam wartosci domyslnej $fallback" >&2
+  else
+    echo "[WARN] Brak pliku $description ($file_path), uzywam wartosci domyslnej $fallback" >&2
+  fi
+
+  echo "$fallback"
 }
 
-read_temp_zewn() {
-  echo "5.2"
-}
-
-read_okno_state() {
-  # 1 = zamkniete, 0 = otwarte
-  echo "1"
-}
-
-# ===================================================
-
-temp_wewn="$(read_temp_wewn)"
-temp_zewn="$(read_temp_zewn)"
-okno_state="$(read_okno_state)"
+temp_wewn="$(read_value "$VALUE_TEMP_WEWN_FILE" "temp_wewn" "$DEFAULT_TEMP_WEWN")"
+temp_zewn="$(read_value "$VALUE_TEMP_ZEWN_FILE" "temp_zewn" "$DEFAULT_TEMP_ZEWN")"
+okno_state="$(read_value "$VALUE_OKNO_FILE" "okno_stan" "$DEFAULT_OKNO")"
 
 echo "[PUB] $TOPIC_TEMP_WEWN -> $temp_wewn"
 mosquitto_pub -h "$BROKER_HOST" -p "$BROKER_PORT" -t "$TOPIC_TEMP_WEWN" -m "$temp_wewn"
@@ -231,6 +250,13 @@ mosquitto_pub -h "$BROKER_HOST" -p "$BROKER_PORT" -t "$TOPIC_TEMP_ZEWN" -m "$tem
 echo "[PUB] $TOPIC_OKNO -> $okno_state"
 mosquitto_pub -h "$BROKER_HOST" -p "$BROKER_PORT" -t "$TOPIC_OKNO" -m "$okno_state"
 ```
+
+Domyslnie skrypt szuka wartosci w plikach tekstowych tworzonych w katalogu `~/okno-mqtt/`:
+- `temp_wewn` – ostatnia linia to temperatura wewnetrzna,
+- `temp_zewn` – temperatura zewnetrzna,
+- `okno_stan` – stan okna (`1`/`0`).
+
+Jesli pliku brakuje albo jest pusty, wysylana jest wartosc domyslna z `defaults/main.yml`. Wystarczy wiec, ze inne procesy/czujniki beda nadpisywac te pliki (np. przez `echo 22.4 > ~/okno-mqtt/temp_wewn`) przed kolejnym wywolaniem timera.
 
 ### 5.2. `templates/sub_okno.sh.j2`
 

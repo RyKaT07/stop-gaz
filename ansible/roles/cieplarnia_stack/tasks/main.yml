@@ -44,17 +44,17 @@
     NEXT_PUBLIC_API_BASE_URL: "{{ web_next_public_api_base_url }}"
   become: false
 
-- name: Ensure mosquitto directories exist
+- name: Ensure mosquitto directories exist with proper ownership
   file:
-    path: "{{ stack_dest }}/mosquitto/{{ item }}"
+    path: "{{ stack_dest }}/mosquitto/{{ item.name }}"
     state: directory
-    owner: root
-    group: root
-    mode: '0755'
+    owner: "{{ item.owner }}"
+    group: "{{ item.group }}"
+    mode: "{{ item.mode }}"
   loop:
-    - config
-    - data
-    - log
+    - { name: config, owner: root, group: root, mode: '0755' }
+    - { name: data, owner: '1883', group: '1883', mode: '0770' }
+    - { name: log, owner: '1883', group: '1883', mode: '0770' }
 
 - name: Copy mosquitto config files
   copy:
