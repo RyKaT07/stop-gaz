@@ -122,10 +122,14 @@ def build_measurement_rows(data: list[tuple[datetime, float]]):
             )
         )
 
-        inside_delta = 4.5 if scenario.window_closed == 1.0 else 2.2
+        # keep interior near 20-21C regardless of outside swings;
+        # drop a bit when the window is open or leak is suspected
+        inside_value = 21.0
+        if scenario.window_closed == 0.0:
+            inside_value -= 2.0
         if scenario.leak:
-            inside_delta -= 1.0
-        inside_value = ambient + inside_delta
+            inside_value -= 1.0
+        inside_delta = inside_value - ambient
         inside_payload = {
             "unit": "C",
             "source": "simulated",
@@ -171,7 +175,7 @@ async def insert_measurements(pool: asyncpg.Pool, rows: Iterable[tuple[str, str,
 
 
 async def main() -> None:
-    now_local = datetime.now(TZ).replace(minute=0, second=0, microsecond=0)
+    now_local = datetime.now(TZ).replace(second=0, microsecond=0)
     start_dt = now_local - timedelta(hours=24)
     weather_data = build_sampled_weather(start_dt, now_local)
     if not weather_data:

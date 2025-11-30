@@ -30,9 +30,9 @@ interface MeasurementsDashboardProps {
 interface TimelinePoint {
   ts: string;
   label: string;
-  inside?: number;
-  outside?: number;
-  ambient?: number;
+  inside?: number | null;
+  outside?: number | null;
+  ambient?: number | null;
   windowClosed?: number;
 }
 
@@ -61,7 +61,15 @@ const timeFormatter = new Intl.DateTimeFormat('pl-PL', {
     timeZone: 'Europe/Warsaw',
 });
 
+const BUCKET_SIZE_MS = 60 * 1000; // group readings by minute to align series
+
 const formatTimeLabel = (ts: string): string => timeFormatter.format(new Date(ts));
+
+const bucketTimestamp = (ts: string): string => {
+  const date = new Date(ts);
+  const bucket = Math.floor(date.getTime() / BUCKET_SIZE_MS) * BUCKET_SIZE_MS;
+  return new Date(bucket).toISOString();
+};
 
 const computeAverageStepDiff = (values: number[]): number => {
   if (values.length < 2) {
@@ -97,7 +105,7 @@ const transformMeasurements = (measurements: Measurement[]): TransformResult => 
   const windowValues: number[] = [];
 
   for (const measurement of sorted) {
-    const key = measurement.ts;
+    const key = bucketTimestamp(measurement.ts);
     let entry = timeline.get(key);
     if (!entry) {
       entry = { ts: key, label: formatTimeLabel(key) };
@@ -124,11 +132,18 @@ const transformMeasurements = (measurements: Measurement[]): TransformResult => 
     }
   }
 
-  const points = Array.from(timeline.values());
-
-  const temperatureSeries = points.filter(
-    (point) => point.inside !== undefined || point.outside !== undefined || point.ambient !== undefined,
+  const points = Array.from(timeline.values()).sort(
+    (a, b) => new Date(a.ts).getTime() - new Date(b.ts).getTime(),
   );
+
+  const temperatureSeries = points
+    .filter((point) => point.inside !== undefined || point.outside !== undefined || point.ambient !== undefined)
+    .map((point) => ({
+      ...point,
+      inside: point.inside ?? null,
+      outside: point.outside ?? null,
+      ambient: point.ambient ?? null,
+    }));
 
   const deltaSeries = points
     .filter((point) => point.outside !== undefined && point.ambient !== undefined)
@@ -147,11 +162,11 @@ const transformMeasurements = (measurements: Measurement[]): TransformResult => 
     }));
 
   const spanMinutes = (() => {
-    if (sorted.length < 2) {
+    if (points.length < 2) {
       return 0;
     }
-    const start = new Date(sorted[0].ts).getTime();
-    const end = new Date(sorted[sorted.length - 1].ts).getTime();
+    const start = new Date(points[0].ts).getTime();
+    const end = new Date(points[points.length - 1].ts).getTime();
     return Math.max(0, (end - start) / 60000);
   })();
 
@@ -347,9 +362,33 @@ export function MeasurementsDashboard({ measurements }: MeasurementsDashboardPro
                   <YAxis unit="°C" tick={{ fontSize: 12 }} width={50} />
                   <RechartsTooltip content={<ChartTooltip />} />
                   <Legend />
-                  <Line type="monotone" dataKey="inside" name="Wewnątrz" stroke="#ea580c" strokeWidth={2} dot={false} />
-                  <Line type="monotone" dataKey="outside" name="Na zewnątrz (okno)" stroke="#0ea5e9" strokeWidth={2} dot={false} />
-                  <Line type="monotone" dataKey="ambient" name="Warszawa" stroke="#6366f1" strokeDasharray="6 4" dot={false} />
+                  <Line
+                    type="monotone"
+                    dataKey="inside"
+                    name="Wewnątrz"
+                    stroke="#ea580c"
+                    strokeWidth={2}
+                    dot={false}
+                    connectNulls
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="outside"
+                    name="Na zewnątrz (okno)"
+                    stroke="#0ea5e9"
+                    strokeWidth={2}
+                    dot={false}
+                    connectNulls
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="ambient"
+                    name="Warszawa"
+                    stroke="#6366f1"
+                    strokeDasharray="6 4"
+                    dot={false}
+                    connectNulls
+                  />
                 </LineChart>
               </ResponsiveContainer>
             ) : (

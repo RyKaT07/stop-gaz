@@ -6,7 +6,8 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? "";
+const API_ENDPOINT = "/api/window-state";
+const LOCALHOST_ENDPOINT = "http://localhost:8000/window-state";
 
 interface WindowStateResponse {
   state: number | null;
@@ -20,19 +21,42 @@ export function WindowControl({ className }: { className?: string }) {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const requestWindowState = useCallback(
+    async (method: 'GET' | 'POST', body?: Record<string, unknown>) => {
+      const fallback = typeof window !== 'undefined'
+        ? `${window.location.protocol}//localhost:8000/window-state`
+        : LOCALHOST_ENDPOINT;
+      const endpoints = method === 'GET' ? [API_ENDPOINT, fallback] : [API_ENDPOINT, fallback];
+      let lastError: unknown = null;
+
+      for (const url of endpoints) {
+        try {
+          const res = await fetch(url, {
+            method,
+            cache: method === 'GET' ? 'no-store' : undefined,
+            headers: body ? { 'Content-Type': 'application/json' } : undefined,
+            body: body ? JSON.stringify(body) : undefined,
+          });
+          if (!res.ok) {
+            throw new Error(`Błąd pobierania: ${res.status}`);
+          }
+          return res;
+        } catch (err) {
+          lastError = err;
+          console.warn(`Window state request failed for ${url}`, err);
+        }
+      }
+
+      throw lastError ?? new Error('Nieznany błąd zapytania');
+    },
+    [],
+  );
+
   const fetchState = useCallback(async () => {
-    if (!API_BASE) {
-      setError('Brak konfiguracji API');
-      setLoading(false);
-      return;
-    }
     try {
       setLoading(true);
       setError(null);
-      const res = await fetch(`${API_BASE}/window-state`, { cache: 'no-store' });
-      if (!res.ok) {
-        throw new Error(`Błąd pobierania: ${res.status}`);
-      }
+      const res = await requestWindowState('GET');
       const body = (await res.json()) as WindowStateResponse;
       setData(body);
     } catch (err) {
@@ -41,7 +65,7 @@ export function WindowControl({ className }: { className?: string }) {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [requestWindowState]);
 
   useEffect(() => {
     fetchState();
@@ -60,20 +84,13 @@ export function WindowControl({ className }: { className?: string }) {
   const targetState = isClosed === null ? null : isClosed ? 0 : 1;
 
   const handleToggle = async () => {
-    if (!API_BASE || isClosed === null || targetState === null) {
+    if (isClosed === null || targetState === null) {
       return;
     }
     try {
       setSubmitting(true);
       setError(null);
-      const res = await fetch(`${API_BASE}/window-state`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ state: targetState }),
-      });
-      if (!res.ok) {
-        throw new Error(`Błąd publikacji: ${res.status}`);
-      }
+      const res = await requestWindowState('POST', { state: targetState });
       await fetchState();
     } catch (err) {
       console.error('Failed to toggle window state', err);
@@ -116,7 +133,7 @@ export function WindowControl({ className }: { className?: string }) {
         </div>
       </CardHeader>
       <CardContent className="flex flex-col gap-3">
-        <Button onClick={handleToggle} disabled={isClosed === null || submitting || !API_BASE}>
+        <Button onClick={handleToggle} disabled={isClosed === null || submitting}>
           {submitting ? (
             <span className="flex items-center gap-2">
               <Loader2Icon className="h-4 w-4 animate-spin" />

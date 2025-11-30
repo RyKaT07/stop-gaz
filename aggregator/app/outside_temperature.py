@@ -78,7 +78,9 @@ class OutsideTemperaturePublisher:
             try:
                 async with self._mqtt_client() as mqtt_client:
                     async with httpx.AsyncClient(
-                        headers={"User-Agent": self._user_agent}, timeout=15
+                        headers={"User-Agent": self._user_agent},
+                        timeout=httpx.Timeout(25.0, connect=10.0, read=15.0, write=15.0),
+                        transport=httpx.AsyncHTTPTransport(retries=2),
                     ) as http_client:
                         logger.info("Outside temperature publisher connected to MQTT broker")
                         while not self._stop.is_set():
@@ -122,7 +124,7 @@ class OutsideTemperaturePublisher:
                 "source": "open-meteo",
             }
         except Exception as exc:
-            logger.warning("Falling back to synthetic outside temp: %s", exc)
+            logger.warning("Falling back to synthetic outside temp: %s", exc, exc_info=True)
             fallback_value = self._generate_value()
             return {
                 "value": round(fallback_value, 2),
