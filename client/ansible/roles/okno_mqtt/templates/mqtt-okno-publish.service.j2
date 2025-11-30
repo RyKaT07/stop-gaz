@@ -1,0 +1,10 @@
+[Unit]
+Description=Publikacja danych okna do MQTT
+
+[Service]
+Type=oneshot
+User={{ okno_mqtt_user }}
+WorkingDirectory={{ okno_mqtt_project_dir }}
+ExecStart=/bin/bash {{ okno_mqtt_project_dir }}/publish_okno.sh
+StandardOutput=journal
+StandardError=journal

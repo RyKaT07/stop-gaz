@@ -1,0 +1,11 @@
+- hosts: rpi_czujniki
+  become: yes
+
+  vars:
+    okno_mqtt_broker_host: "10.252.249.2"
+    okno_mqtt_broker_port: 1883
+    okno_mqtt_interval_sec: 10
+    okno_mqtt_user: "{{ ansible_user }}"
+
+  roles:
+    - okno_mqtt

@@ -1,0 +1,14 @@
+okno_mqtt_broker_host: "127.0.0.1"
+okno_mqtt_broker_port: 1883
+okno_mqtt_interval_sec: 10
+okno_mqtt_user: "{{ ansible_user }}"
+
+okno_mqtt_project_dir: "/home/{{ okno_mqtt_user }}/okno-mqtt"
+
+okno_mqtt_topic_temp_wewn: "czujnik/okno/temperatura/wewn"
+okno_mqtt_topic_temp_zewn: "czujnik/okno/temperatura/zewn"
+okno_mqtt_topic_okno: "okno/zamkniete"
+
+okno_mqtt_publish_service: "mqtt-okno-publish.service"
+okno_mqtt_publish_timer: "mqtt-okno-publish.timer"
+okno_mqtt_sub_service: "mqtt-okno-sub.service"

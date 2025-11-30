@@ -1,0 +1,10 @@
+[Unit]
+Description=Timer publikacji danych okna do MQTT
+
+[Timer]
+OnBootSec=15
+OnUnitActiveSec={{ okno_mqtt_interval_sec }}
+Unit={{ okno_mqtt_publish_service }}
+
+[Install]
+WantedBy=timers.target

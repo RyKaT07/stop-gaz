@@ -1,0 +1,42 @@
+#!/bin/bash
+
+BROKER_HOST="{{ okno_mqtt_broker_host }}"
+BROKER_PORT={{ okno_mqtt_broker_port }}
+TOPIC_CONTROL="{{ okno_mqtt_topic_okno }}"
+
+SCRIPT_ON="{{ okno_mqtt_project_dir }}/skrypt_on.sh"
+SCRIPT_OFF="{{ okno_mqtt_project_dir }}/skrypt_off.sh"
+
+last=""
+
+echo "Start subskrypcji $TOPIC_CONTROL z $BROKER_HOST:$BROKER_PORT"
+
+mosquitto_sub -h "$BROKER_HOST" -p "$BROKER_PORT" -t "$TOPIC_CONTROL" | while read -r payload; do
+    echo "[SUB] $TOPIC_CONTROL -> $payload"
+
+    if [[ -z "$last" ]]; then
+        last="$payload"
+        echo "Stan poczatkowy: $last"
+        continue
+    fi
+
+    norm_last="$last"
+    norm_payload="$payload"
+
+    [[ "$norm_last" =~ ^[Tt]rue$ ]] && norm_last="1"
+    [[ "$norm_last" =~ ^[Ff]alse$ ]] && norm_last="0"
+    [[ "$norm_payload" =~ ^[Tt]rue$ ]] && norm_payload="1"
+    [[ "$norm_payload" =~ ^[Ff]alse$ ]] && norm_payload="0"
+
+    if [[ "$norm_last" == "0" && "$norm_payload" == "1" ]]; then
+        echo "ZMIANA 0 -> 1, odpalam ON"
+        "$SCRIPT_ON" &
+    elif [[ "$norm_last" == "1" && "$norm_payload" == "0" ]]; then
+        echo "ZMIANA 1 -> 0, odpalam OFF"
+        "$SCRIPT_OFF" &
+    else
+        echo "Brak istotnej zmiany ($norm_last -> $norm_payload)"
+    fi
+
+    last="$payload"
+done

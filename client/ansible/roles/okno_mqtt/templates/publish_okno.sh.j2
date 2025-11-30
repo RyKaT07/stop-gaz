@@ -1,0 +1,34 @@
+#!/bin/bash
+set -e
+
+BROKER_HOST="{{ okno_mqtt_broker_host }}"
+BROKER_PORT={{ okno_mqtt_broker_port }}
+
+TOPIC_TEMP_WEWN="{{ okno_mqtt_topic_temp_wewn }}"
+TOPIC_TEMP_ZEWN="{{ okno_mqtt_topic_temp_zewn }}"
+TOPIC_OKNO="{{ okno_mqtt_topic_okno }}"
+
+read_temp_wewn() {
+  echo "23.5"
+}
+
+read_temp_zewn() {
+  echo "5.2"
+}
+
+read_okno_state() {
+  echo "1"
+}
+
+temp_wewn="$(read_temp_wewn)"
+temp_zewn="$(read_temp_zewn)"
+okno_state="$(read_okno_state)"
+
+echo "[PUB] $TOPIC_TEMP_WEWN -> $temp_wewn"
+mosquitto_pub -h "$BROKER_HOST" -p "$BROKER_PORT" -t "$TOPIC_TEMP_WEWN" -m "$temp_wewn"
+
+echo "[PUB] $TOPIC_TEMP_ZEWN -> $temp_zewn"
+mosquitto_pub -h "$BROKER_HOST" -p "$BROKER_PORT" -t "$TOPIC_TEMP_ZEWN" -m "$temp_zewn"
+
+echo "[PUB] $TOPIC_OKNO -> $okno_state"
+mosquitto_pub -h "$BROKER_HOST" -p "$BROKER_PORT" -t "$TOPIC_OKNO" -m "$okno_state"

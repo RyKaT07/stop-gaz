@@ -1,0 +1,14 @@
+[Unit]
+Description=Subskrypcja MQTT okno/zamkniete
+
+[Service]
+User={{ okno_mqtt_user }}
+WorkingDirectory={{ okno_mqtt_project_dir }}
+ExecStart=/bin/bash {{ okno_mqtt_project_dir }}/sub_okno.sh
+Restart=always
+RestartSec=3
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

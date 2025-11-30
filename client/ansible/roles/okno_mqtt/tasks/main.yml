@@ -1,0 +1,78 @@
+- name: Ensure mosquitto-clients installed
+  apt:
+    name: mosquitto-clients
+    state: present
+    update_cache: yes
+
+- name: Ensure project directory exists
+  file:
+    path: "{{ okno_mqtt_project_dir }}"
+    state: directory
+    owner: "{{ okno_mqtt_user }}"
+    group: "{{ okno_mqtt_user }}"
+    mode: "0755"
+
+- name: Deploy publish_okno.sh
+  template:
+    src: publish_okno.sh.j2
+    dest: "{{ okno_mqtt_project_dir }}/publish_okno.sh"
+    owner: "{{ okno_mqtt_user }}"
+    group: "{{ okno_mqtt_user }}"
+    mode: "0755"
+
+- name: Deploy sub_okno.sh
+  template:
+    src: sub_okno.sh.j2
+    dest: "{{ okno_mqtt_project_dir }}/sub_okno.sh"
+    owner: "{{ okno_mqtt_user }}"
+    group: "{{ okno_mqtt_user }}"
+    mode: "0755"
+
+- name: Deploy skrypt_on.sh
+  template:
+    src: skrypt_on.sh.j2
+    dest: "{{ okno_mqtt_project_dir }}/skrypt_on.sh"
+    owner: "{{ okno_mqtt_user }}"
+    group: "{{ okno_mqtt_user }}"
+    mode: "0755"
+
+- name: Deploy skrypt_off.sh
+  template:
+    src: skrypt_off.sh.j2
+    dest: "{{ okno_mqtt_project_dir }}/skrypt_off.sh"
+    owner: "{{ okno_mqtt_user }}"
+    group: "{{ okno_mqtt_user }}"
+    mode: "0755"
+
+- name: Deploy mqtt-okno-publish.service
+  template:
+    src: mqtt-okno-publish.service.j2
+    dest: "/etc/systemd/system/{{ okno_mqtt_publish_service }}"
+    mode: "0644"
+  notify: reload systemd
+
+- name: Deploy mqtt-okno-publish.timer
+  template:
+    src: mqtt-okno-publish.timer.j2
+    dest: "/etc/systemd/system/{{ okno_mqtt_publish_timer }}"
+    mode: "0644"
+  notify: reload systemd
+
+- name: Deploy mqtt-okno-sub.service
+  template:
+    src: mqtt-okno-sub.service.j2
+    dest: "/etc/systemd/system/{{ okno_mqtt_sub_service }}"
+    mode: "0644"
+  notify: reload systemd
+
+- name: Ensure mqtt-okno-publish.timer enabled and started
+  systemd:
+    name: "{{ okno_mqtt_publish_timer }}"
+    enabled: yes
+    state: started
+
+- name: Ensure mqtt-okno-sub.service enabled and started
+  systemd:
+    name: "{{ okno_mqtt_sub_service }}"
+    enabled: yes
+    state: started
