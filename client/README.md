@@ -2,10 +2,15 @@
 
 Ponizej znajdziesz komplet instrukcji, jak przygotowac powtarzalny setup na Raspi przy pomocy Ansible (bez Pythona, tylko bash + mosquitto + systemd + timer). Material jest gotowy do skopiowania 1:1 do repo, tak aby po sklonowaniu mozna bylo niezaleznie odpalic klienta i caly pozostaly stack (Ansible nie bedzie kolidowal z reszta).
 
+**Szybki start klienta**
+- `./run-client.sh` uruchamia playbook z katalogu `client/ansible` (wymaga zainstalowanego Ansible lokalnie).
+- Haslo sudo pobierane jest z `CLIENT_BECOME_PASS` (jesli brak, skrypt korzysta z wartosci wpisanej w pliku; zmien ja pod siebie).
+- Nadal mozesz standardowo wejsc do `client/ansible` i wykonac `ansible-playbook`, np. gdy chcesz podac wlasne flagi.
+
 ## 1. Struktura projektu Ansible
 
 ```text
-ansible/
+client/ansible/
 ├─ inventory.ini
 ├─ playbook-okno-mqtt.yml
 └─ roles/
@@ -26,7 +31,7 @@ ansible/
          └─ mqtt-okno-sub.service.j2
 ```
 
-## 2. Inventory – `inventory.ini`
+## 2. Inventory – `client/ansible/inventory.ini`
 
 ```ini
 [rpi_czujniki]
@@ -36,7 +41,7 @@ czujnik ansible_host=10.252.249.X ansible_user=czujka
 * Podmien `10.252.249.X` na IP swojej Raspi.
 * `ansible_user` to uzytkownik SSH (przyklad: `czujka`).
 
-## 3. Playbook – `playbook-okno-mqtt.yml`
+## 3. Playbook – `client/ansible/playbook-okno-mqtt.yml`
 
 ```yaml
 - hosts: rpi_czujniki
@@ -55,7 +60,11 @@ czujnik ansible_host=10.252.249.X ansible_user=czujka
 Uruchamianie:
 
 ```bash
-cd ansible
+# calosc z repozytorium
+CLIENT_BECOME_PASS='twoje_haslo' ./run-client.sh
+
+# lub recznie z katalogu klienta
+cd client/ansible
 ansible-playbook -i inventory.ini playbook-okno-mqtt.yml
 ```
 

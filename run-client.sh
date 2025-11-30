@@ -4,7 +4,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "${SCRIPT_DIR}/client/ansible"
 
-DEFAULT_PASS="zostanie#%3"
+DEFAULT_PASS="czujnik67"
 BECOME_PASS="${CLIENT_BECOME_PASS:-${DEFAULT_PASS}}"
 
 if [[ -z "${BECOME_PASS}" ]]; then
