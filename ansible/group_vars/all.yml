@@ -3,6 +3,7 @@
 stack_dest: /opt/cieplarnia
 web_next_public_api_base_url: "http://10.252.249.2:8000"
 web_public_origin: "http://10.252.249.2:3000"
+aggregator_internal_api_base_url: "http://aggregator:8000"
 agg_allowed_origins: "{{ web_public_origin }},http://localhost:3000,http://web:3000"
 agg_mqtt_topic: "#"
 mosquitto_users:
@@ -14,3 +15,13 @@ mosquitto_enable_tls: false
 mosquitto_ca_subject: "/C=PL/ST=Mazowieckie/L=Warsaw/O=Cieplarnia/OU=IoT/CN=cieplarnia-ca"
 mosquitto_cert_subject: "/C=PL/ST=Mazowieckie/L=Warsaw/O=Cieplarnia/OU=IoT/CN=mosquitto-broker"
 mosquitto_cert_sans: "DNS:mosquitto.local,IP:127.0.0.1"
+outside_temperature_topic: "pogoda/temperatura/zewn"
+outside_temperature_enabled: true
+outside_temperature_baseline: 18.0
+outside_temperature_variation: 2.5
+outside_temperature_interval_seconds: 300
+outside_temperature_api_base_url: "https://api.open-meteo.com/v1/forecast"
+outside_temperature_latitude: 52.2297
+outside_temperature_longitude: 21.0122
+outside_temperature_timezone: "Europe/Warsaw"
+outside_temperature_user_agent: "cieplarnia-aggregator"

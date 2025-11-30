@@ -1,21 +1,12 @@
-import { ArrowDownIcon, ArrowUpIcon, RefreshCwIcon } from "lucide-react";
-import { Suspense } from "react";
+import { RefreshCwIcon } from "lucide-react";
 
-import { Badge } from "@/components/ui/badge";
+import { MeasurementsDashboard } from "@/components/measurements-dashboard";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ThemeToggle } from "@/components/theme-toggle";
+import type { Measurement } from "@/lib/measurements";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
-
-interface Measurement {
-  id: number;
-  device_id: string;
-  metric: string;
-  value: number;
-  ts: string;
-  payload?: Record<string, unknown> | null;
-}
+const PUBLIC_API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
+const INTERNAL_API_BASE = process.env.AGGREGATOR_API_BASE_URL ?? PUBLIC_API_BASE;
 
 type NextFetchRequestInit = RequestInit & {
   next?: {
@@ -24,21 +15,14 @@ type NextFetchRequestInit = RequestInit & {
   };
 };
 
-function formatUnit(payload: Measurement["payload"]): string {
-  if (payload && typeof payload === "object" && "unit" in payload) {
-    const unit = (payload as { unit?: unknown }).unit;
-    return typeof unit === "string" ? unit : "";
-  }
-  return "";
-}
-
 async function getMeasurements(): Promise<Measurement[]> {
   const fetchOptions: NextFetchRequestInit = {
     next: { revalidate: 5 },
   };
 
   try {
-    const res = await fetch(`${API_BASE}/measurements?limit=20`, fetchOptions);
+    const params = new URLSearchParams({ hours: "24" });
+    const res = await fetch(`${INTERNAL_API_BASE}/measurements?${params.toString()}`, fetchOptions);
     if (!res.ok) {
       return [];
     }
@@ -49,19 +33,23 @@ async function getMeasurements(): Promise<Measurement[]> {
   }
 }
 
-export default function HomePage() {
+export default async function HomePage() {
+  const measurements = await getMeasurements();
+
   return (
-    <main className="min-h-dvh bg-background">
-      <section className="mx-auto flex max-w-5xl flex-col gap-6 px-6 py-10">
+    <main className="min-h-dvh bg-slate-50 text-slate-900 transition-colors dark:bg-slate-950 dark:text-slate-100">
+      <section className="relative mx-auto flex max-w-5xl flex-col gap-6 px-6 py-10">
+        <div className="pointer-events-none absolute inset-0 -z-10 opacity-70 bg-[radial-gradient(circle_at_top,_rgba(56,189,248,0.3),_transparent_55%),radial-gradient(circle_at_bottom,_rgba(251,113,133,0.25),_transparent_65%)] dark:hidden" />
+        <div className="pointer-events-none absolute inset-0 -z-10 hidden opacity-100 dark:block dark:bg-[radial-gradient(circle_at_top,_rgba(14,165,233,0.18),_transparent_55%),radial-gradient(circle_at_bottom,_rgba(236,72,153,0.12),_transparent_65%)]" />
         <header className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
-            <p className="text-sm uppercase text-muted-foreground">Cieplarnia</p>
-            <h1 className="text-3xl font-semibold tracking-tight">Śledzenie klimatu</h1>
-            <p className="text-muted-foreground">Dane wprost z TimescaleDB poprzez agregator FastAPI.</p>
+            <p className="text-sm uppercase text-muted-foreground">Śledzenie wycieku ciepła</p>
+            <h1 className="text-3xl font-semibold tracking-tight">ŁączyChmura</h1>
+            <p className="text-muted-foreground">Dane monitorowane na żywo z czujników.</p>
           </div>
           <div className="flex items-center gap-2">
             <Button variant="secondary" className="gap-2" asChild>
-              <a href={`${API_BASE}/health`} target="_blank" rel="noreferrer">
+              <a href={`${PUBLIC_API_BASE}/health`} target="_blank" rel="noreferrer">
                 <RefreshCwIcon className="h-4 w-4" />
                 API Health
               </a>
@@ -69,75 +57,8 @@ export default function HomePage() {
             <ThemeToggle />
           </div>
         </header>
-
-        <Suspense fallback={<MeasurementsSkeleton />}>
-          <MeasurementsList />
-        </Suspense>
+        <MeasurementsDashboard measurements={measurements} />
       </section>
     </main>
-  );
-}
-
-async function MeasurementsList() {
-  const measurements = await getMeasurements();
-
-  if (!measurements.length) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Brak danych</CardTitle>
-          <CardDescription>Wygląda na to, że nic jeszcze nie spływa z MQTT.</CardDescription>
-        </CardHeader>
-      </Card>
-    );
-  }
-
-  return (
-    <div className="grid gap-4 md:grid-cols-2">
-      {measurements.map((item) => (
-        <Card key={item.id}>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0">
-            <div>
-              <CardTitle className="text-xl capitalize">{item.metric.replace("_", " ")}</CardTitle>
-              <CardDescription>Urządzenie {item.device_id}</CardDescription>
-            </div>
-            <Badge variant={item.value >= 0 ? "default" : "outline"}>{new Date(item.ts).toLocaleTimeString()}</Badge>
-          </CardHeader>
-          <CardContent>
-            <p className="text-4xl font-bold">
-              {item.value}
-              <span className="text-base font-medium text-muted-foreground"> {formatUnit(item.payload)}</span>
-            </p>
-            <div className="mt-4 flex items-center gap-2 text-sm text-muted-foreground">
-              {item.value >= 0 ? (
-                <ArrowUpIcon className="h-4 w-4 text-emerald-500" />
-              ) : (
-                <ArrowDownIcon className="h-4 w-4 text-red-500" />
-              )}
-              Pełny payload: <code className="rounded bg-muted px-1 py-0.5">{JSON.stringify(item.payload ?? {})}</code>
-            </div>
-          </CardContent>
-        </Card>
-      ))}
-    </div>
-  );
-}
-
-function MeasurementsSkeleton() {
-  return (
-    <div className="grid gap-4 md:grid-cols-2">
-      {Array.from({ length: 4 }).map((_, idx) => (
-        <Card key={idx} className="animate-pulse">
-          <CardHeader>
-            <div className="h-4 w-1/2 rounded bg-muted" />
-            <div className="mt-2 h-4 w-1/3 rounded bg-muted" />
-          </CardHeader>
-          <CardContent>
-            <div className="h-10 w-1/3 rounded bg-muted" />
-            <div className="mt-4 h-4 w-full rounded bg-muted" />
-          </CardContent>
-        </Card>
-      ))}
-    </div>
   );
 }

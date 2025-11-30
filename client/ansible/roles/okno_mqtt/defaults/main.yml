@@ -7,7 +7,7 @@ okno_mqtt_project_dir: "/home/{{ okno_mqtt_user }}/okno-mqtt"
 
 okno_mqtt_topic_temp_wewn: "czujnik/okno/temperatura/wewn"
 okno_mqtt_topic_temp_zewn: "czujnik/okno/temperatura/zewn"
-okno_mqtt_topic_okno: "okno/zamkniete"
+okno_mqtt_topic_okno: "okno/stan"
 
 okno_mqtt_file_temp_wewn: "{{ okno_mqtt_project_dir }}/temp_wewn"
 okno_mqtt_file_temp_zewn: "{{ okno_mqtt_project_dir }}/temp_zewn"

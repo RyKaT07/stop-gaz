@@ -177,6 +177,6 @@
         {{ user_item.name }} {{ user_item.password }}
 
 - name: Launch mosquitto stack
-  command: docker compose -f "{{ stack_dest }}/docker-compose.yml" up -d
+  command: docker compose -f "{{ stack_dest }}/docker-compose.yml" up -d --build
   args:
     chdir: "{{ stack_dest }}"
