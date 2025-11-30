@@ -1,0 +1,9 @@
+---
+- name: Provision edge host and deploy Mosquitto
+  hosts: edge
+  become: true
+  vars_files:
+    - group_vars/all.yml
+  roles:
+    - docker_host
+    - mosquitto

@@ -1,0 +1,10 @@
+# ACL rules for Mosquitto.
+# Syntax: https://mosquitto.org/man/mosquitto-conf-5.html
+
+# Aggregator service publishes sensor data and reads control topics
+user aggregator
+topic readwrite cieplarnia/#
+
+# Dashboard or readonly clients should not publish control messages
+user dashboard
+topic read cieplarnia/+/state

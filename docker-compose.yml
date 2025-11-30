@@ -1,0 +1,86 @@
+services:
+  mosquitto:
+    image: eclipse-mosquitto:2.0
+    container_name: cieplarnia-mosquitto
+    restart: unless-stopped
+    ports:
+      - "1883:1883"
+      - "9001:9001"
+    environment:
+      TZ: Europe/Warsaw
+    volumes:
+      - ./mosquitto/config:/mosquitto/config
+      - ./mosquitto/data:/mosquitto/data
+      - ./mosquitto/log:/mosquitto/log
+    healthcheck:
+      test: ["CMD-SHELL", "mosquitto_sub -h localhost -p 1883 -t '$SYS/broker/version' -C 1 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 5s
+    networks:
+      - cieplarnia
+
+  timescaledb:
+    image: timescale/timescaledb:2.15.2-pg16
+    container_name: cieplarnia-timescaledb
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: cieplarnia
+      POSTGRES_PASSWORD: cieplarnia
+      POSTGRES_DB: cieplarnia
+      TIMESCALEDB_TELEMETRY: "off"
+    volumes:
+      - timescaledb-data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "cieplarnia"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - cieplarnia
+
+  aggregator:
+    build:
+      context: ./aggregator
+    container_name: cieplarnia-aggregator
+    restart: unless-stopped
+    depends_on:
+      - mosquitto
+      - timescaledb
+    environment:
+      DATABASE_URL: postgresql://cieplarnia:cieplarnia@timescaledb:5432/cieplarnia
+      MQTT_BROKER_HOST: mosquitto
+      MQTT_BROKER_PORT: 1883
+      MQTT_TOPIC: cieplarnia/#
+      API_HOST: 0.0.0.0
+      API_PORT: 8000
+      ALLOWED_ORIGINS: http://localhost:3000,http://web:3000
+    ports:
+      - "8000:8000"
+    networks:
+      - cieplarnia
+
+  web:
+    build:
+      context: ./web
+    container_name: cieplarnia-web
+    restart: unless-stopped
+    depends_on:
+      - aggregator
+    environment:
+      NEXT_PUBLIC_API_BASE_URL: http://aggregator:8000
+    ports:
+      - "3000:3000"
+    networks:
+      - cieplarnia
+
+networks:
+  cieplarnia:
+    driver: bridge
+
+volumes:
+  timescaledb-data:
+    driver: local

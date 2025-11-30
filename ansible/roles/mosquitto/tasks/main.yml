@@ -1,0 +1,62 @@
+- name: Determine project root (parent of ansible directory)
+  set_fact:
+    project_root: "{{ playbook_dir | dirname }}"
+
+- name: Copy mosquitto directory to remote host
+  copy:
+    src: "{{ project_root }}/mosquitto/"
+    dest: "{{ mosquitto_dest }}/mosquitto/"
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: Copy docker-compose file
+  copy:
+    src: "{{ project_root }}/docker-compose.yml"
+    dest: "{{ mosquitto_dest }}/docker-compose.yml"
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Copy scripts directory
+  copy:
+    src: "{{ project_root }}/scripts/"
+    dest: "{{ mosquitto_dest }}/scripts/"
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: Ensure generate certs script is executable
+  file:
+    path: "{{ mosquitto_dest }}/scripts/mosquitto-generate-certs.sh"
+    mode: '0755'
+    state: file
+  when: mosquitto_enable_tls | default(false)
+
+- name: Generate TLS certs if missing
+  command: "{{ mosquitto_dest }}/scripts/mosquitto-generate-certs.sh {{ mosquitto_dest }}/mosquitto/certs"
+  args:
+    creates: "{{ mosquitto_dest }}/mosquitto/certs/ca.crt"
+  when: mosquitto_enable_tls | default(false)
+
+- name: Create passwordfile and add users
+  block:
+    - name: Ensure passwordfile exists
+      file:
+        path: "{{ mosquitto_dest }}/mosquitto/config/passwordfile"
+        state: touch
+        mode: '0600'
+
+    - name: Add mosquitto users using docker mosquitto_passwd
+      loop: "{{ mosquitto_users }}"
+      vars:
+        user_item: "{{ item }}"
+      command: >-
+        docker run --rm -v {{ mosquitto_dest }}/mosquitto/config:/mosquitto/config
+        eclipse-mosquitto:2 mosquitto_passwd -b /mosquitto/config/passwordfile
+        {{ user_item.name }} {{ user_item.password }}
+
+- name: Launch mosquitto stack
+  command: docker compose -f "{{ mosquitto_dest }}/docker-compose.yml" up -d
+  args:
+    chdir: "{{ mosquitto_dest }}"

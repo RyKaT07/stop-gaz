@@ -1,0 +1,12 @@
+---
+# Global vars for deployment
+mosquitto_dest: /opt/stop-gaz
+mosquitto_users:
+  - name: aggregator
+    password: "agregator123"
+  - name: dashboard
+    password: "dashboard123"
+mosquitto_enable_tls: false
+mosquitto_ca_subject: "/C=PL/ST=Mazowieckie/L=Warsaw/O=Cieplarnia/OU=IoT/CN=cieplarnia-ca"
+mosquitto_cert_subject: "/C=PL/ST=Mazowieckie/L=Warsaw/O=Cieplarnia/OU=IoT/CN=mosquitto-broker"
+mosquitto_cert_sans: "DNS:mosquitto.local,IP:127.0.0.1"

@@ -1,0 +1,59 @@
+---
+- name: Update apt cache
+  apt:
+    update_cache: yes
+    cache_valid_time: 3600
+  when: ansible_facts['os_family'] == 'Debian'
+
+- name: Install prerequisites (Debian/Ubuntu)
+  apt:
+    name:
+      - apt-transport-https
+      - ca-certificates
+      - curl
+      - gnupg
+      - lsb-release
+      - openssl
+      - python3-minimal
+      - mosquitto-clients
+    state: present
+  when: ansible_facts['os_family'] == 'Debian'
+
+- name: Warn about unsupported OS family
+  ansible.builtin.fail:
+    msg: >-
+      docker_host role currently supports only Debian/Ubuntu families. Detected
+      {{ ansible_facts['os_family'] }}.
+  when: ansible_facts['os_family'] != 'Debian'
+
+- name: Check if Docker is already installed
+  command: docker --version
+  register: docker_check
+  failed_when: false
+  changed_when: false
+
+- name: Install Docker using convenience script (get.docker.com)
+  shell: curl -fsSL https://get.docker.com | sh
+  args:
+    executable: /bin/bash
+  when: docker_check.rc != 0
+
+- name: Ensure docker service is started and enabled
+  service:
+    name: docker
+    state: started
+    enabled: yes
+
+- name: Ensure docker compose plugin is present
+  apt:
+    name: docker-compose-plugin
+    state: present
+  ignore_errors: yes
+
+- name: Create destination directory
+  file:
+    path: "{{ mosquitto_dest }}"
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'

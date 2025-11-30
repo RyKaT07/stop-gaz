@@ -1,0 +1,18 @@
+# Local secrets and runtime artifacts
+mosquitto/config/passwordfile
+mosquitto/config/passwordfile.*
+
+# Certificates must be generated per environment
+mosquitto/certs/*
+!mosquitto/certs/.gitkeep
+
+# Broker persistence/log output
+mosquitto/data/*
+!mosquitto/data/.gitkeep
+mosquitto/log/*
+!mosquitto/log/.gitkeep
+
+# Misc tooling
+.env
+*.log
+run-ansible.sh
