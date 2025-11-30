@@ -6,7 +6,7 @@ class Settings(BaseSettings):
     database_url: str
     mqtt_broker_host: str = "mosquitto"
     mqtt_broker_port: int = 1883
-    mqtt_topic: str = "cieplarnia/#"
+    mqtt_topic: str = "#"
     api_host: str = "0.0.0.0"
     api_port: int = 8000
     allowed_origins: str = "http://localhost:3000"

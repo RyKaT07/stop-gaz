@@ -54,7 +54,7 @@ services:
       DATABASE_URL: postgresql://cieplarnia:cieplarnia@timescaledb:5432/cieplarnia
       MQTT_BROKER_HOST: mosquitto
       MQTT_BROKER_PORT: 1883
-      MQTT_TOPIC: cieplarnia/#
+      MQTT_TOPIC: "${MQTT_TOPIC:-#}"
       API_HOST: 0.0.0.0
       API_PORT: 8000
       ALLOWED_ORIGINS: ${AGG_ALLOWED_ORIGINS:-http://localhost:3000,http://web:3000}
