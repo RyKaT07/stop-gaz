@@ -37,3 +37,13 @@ Platforma telemetryczna dla cieplarni: odczyt sensorów, magistrala MQTT, agrega
 
 ## Dokumentacja szczegółowa
 - `docs/mosquitto.md` – uruchomienie i testy brokera MQTT.
+
+## MQTT topics i payloady
+| Topic | Znaczenie | Przykładowy payload |
+| --- | --- | --- |
+| `czujnik/okno/temperatura/wewn` | Temperatura po stronie wewnętrznej ramy okna; zapisywana jako metryka `temperature_inside`. | `21.4` |
+| `czujnik/okno/temperatura/zewn` | Temperatura po stronie zewnętrznej; metryka `temperature_outside`. | `-3.2` |
+| `okno/zamkniete` | Stan lub żądanie sterownika okna (1/true/zamkniete = zamknięte). Zapisywana jako metryka `window_closed`. | `1` |
+| dowolny inny topic | Fallback – oczekiwany JSON z polami `device_id`, `metric`, `value`. | `{ "device_id": "sensor-1", "metric": "humidity", "value": 45.2 }` |
+
+Agregator FastAPI subskrybuje `cieplarnia/#`, rozpoznaje powyższe topiki i zapisuje wartości w TimescaleDB wraz z oryginalnym payloadem. Dla pozostałych tematów obowiązuje dotychczasowy payload JSON.

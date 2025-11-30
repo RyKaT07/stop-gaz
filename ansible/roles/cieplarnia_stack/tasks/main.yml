@@ -40,11 +40,13 @@
   command: npm run build
   args:
     chdir: "{{ project_root }}/web"
+  environment:
+    NEXT_PUBLIC_API_BASE_URL: "{{ web_next_public_api_base_url }}"
   become: false
 
 - name: Ensure mosquitto directories exist
   file:
-    path: "{{ mosquitto_dest }}/mosquitto/{{ item }}"
+    path: "{{ stack_dest }}/mosquitto/{{ item }}"
     state: directory
     owner: root
     group: root
@@ -57,7 +59,7 @@
 - name: Copy mosquitto config files
   copy:
     src: "{{ project_root }}/mosquitto/config/"
-    dest: "{{ mosquitto_dest }}/mosquitto/config/"
+    dest: "{{ stack_dest }}/mosquitto/config/"
     owner: root
     group: root
     mode: '0644'
@@ -66,7 +68,7 @@
 - name: Copy aggregator service files
   copy:
     src: "{{ project_root }}/aggregator/"
-    dest: "{{ mosquitto_dest }}/aggregator/"
+    dest: "{{ stack_dest }}/aggregator/"
     owner: root
     group: root
     mode: '0644'
@@ -74,12 +76,12 @@
 
 - name: Reset web directory on target
   file:
-    path: "{{ mosquitto_dest }}/web"
+    path: "{{ stack_dest }}/web"
     state: absent
 
 - name: Ensure web directories exist
   file:
-    path: "{{ mosquitto_dest }}/web/{{ item }}"
+    path: "{{ stack_dest }}/web/{{ item }}"
     state: directory
     owner: root
     group: root
@@ -92,7 +94,7 @@
 - name: Copy Next.js build output
   copy:
     src: "{{ project_root }}/web/.next/"
-    dest: "{{ mosquitto_dest }}/web/.next/"
+    dest: "{{ stack_dest }}/web/.next/"
     owner: root
     group: root
     mode: '0644'
@@ -101,7 +103,7 @@
 - name: Copy public assets
   copy:
     src: "{{ project_root }}/web/public/"
-    dest: "{{ mosquitto_dest }}/web/public/"
+    dest: "{{ stack_dest }}/web/public/"
     owner: root
     group: root
     mode: '0644'
@@ -110,7 +112,7 @@
 - name: Copy web runtime files
   copy:
     src: "{{ project_root }}/web/{{ item }}"
-    dest: "{{ mosquitto_dest }}/web/{{ item }}"
+    dest: "{{ stack_dest }}/web/{{ item }}"
     owner: root
     group: root
     mode: '0644'
@@ -123,7 +125,7 @@
 - name: Copy docker-compose file
   copy:
     src: "{{ project_root }}/docker-compose.yml"
-    dest: "{{ mosquitto_dest }}/docker-compose.yml"
+    dest: "{{ stack_dest }}/docker-compose.yml"
     owner: root
     group: root
     mode: '0644'
@@ -131,29 +133,37 @@
 - name: Copy scripts directory
   copy:
     src: "{{ project_root }}/scripts/"
-    dest: "{{ mosquitto_dest }}/scripts/"
+    dest: "{{ stack_dest }}/scripts/"
     owner: root
     group: root
     mode: '0755'
 
+- name: Write stack environment file
+  template:
+    src: stack.env.j2
+    dest: "{{ stack_dest }}/.env"
+    owner: root
+    group: root
+    mode: '0600'
+
 - name: Ensure generate certs script is executable
   file:
-    path: "{{ mosquitto_dest }}/scripts/mosquitto-generate-certs.sh"
+    path: "{{ stack_dest }}/scripts/mosquitto-generate-certs.sh"
     mode: '0755'
     state: file
   when: mosquitto_enable_tls | default(false)
 
 - name: Generate TLS certs if missing
-  command: "{{ mosquitto_dest }}/scripts/mosquitto-generate-certs.sh {{ mosquitto_dest }}/mosquitto/certs"
+  command: "{{ stack_dest }}/scripts/mosquitto-generate-certs.sh {{ stack_dest }}/mosquitto/certs"
   args:
-    creates: "{{ mosquitto_dest }}/mosquitto/certs/ca.crt"
+    creates: "{{ stack_dest }}/mosquitto/certs/ca.crt"
   when: mosquitto_enable_tls | default(false)
 
 - name: Create passwordfile and add users
   block:
     - name: Ensure passwordfile exists
       file:
-        path: "{{ mosquitto_dest }}/mosquitto/config/passwordfile"
+        path: "{{ stack_dest }}/mosquitto/config/passwordfile"
         state: touch
         mode: '0600'
 
@@ -162,11 +172,11 @@
       vars:
         user_item: "{{ item }}"
       command: >-
-        docker run --rm -v {{ mosquitto_dest }}/mosquitto/config:/mosquitto/config
+        docker run --rm -v {{ stack_dest }}/mosquitto/config:/mosquitto/config
         eclipse-mosquitto:2 mosquitto_passwd -b /mosquitto/config/passwordfile
         {{ user_item.name }} {{ user_item.password }}
 
 - name: Launch mosquitto stack
-  command: docker compose -f "{{ mosquitto_dest }}/docker-compose.yml" up -d
+  command: docker compose -f "{{ stack_dest }}/docker-compose.yml" up -d
   args:
-    chdir: "{{ mosquitto_dest }}"
+    chdir: "{{ stack_dest }}"

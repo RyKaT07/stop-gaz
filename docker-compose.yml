@@ -57,7 +57,7 @@ services:
       MQTT_TOPIC: cieplarnia/#
       API_HOST: 0.0.0.0
       API_PORT: 8000
-      ALLOWED_ORIGINS: http://localhost:3000,http://web:3000
+      ALLOWED_ORIGINS: ${AGG_ALLOWED_ORIGINS:-http://localhost:3000,http://web:3000}
     ports:
       - "8000:8000"
     networks:
@@ -71,7 +71,7 @@ services:
     depends_on:
       - aggregator
     environment:
-      NEXT_PUBLIC_API_BASE_URL: http://aggregator:8000
+      NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-http://localhost:8000}
     ports:
       - "3000:3000"
     networks:

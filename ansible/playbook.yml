@@ -1,9 +1,9 @@
 ---
-- name: Provision edge host and deploy Mosquitto
+- name: Provision edge host and deploy Cieplarnia stack
   hosts: edge
   become: true
   vars_files:
     - group_vars/all.yml
   roles:
     - docker_host
-    - mosquitto
+    - cieplarnia_stack

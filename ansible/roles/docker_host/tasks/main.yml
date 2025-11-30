@@ -52,7 +52,7 @@
 
 - name: Create destination directory
   file:
-    path: "{{ mosquitto_dest }}"
+    path: "{{ stack_dest }}"
     state: directory
     owner: root
     group: root

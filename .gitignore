@@ -16,3 +16,18 @@ mosquitto/log/*
 .env
 *.log
 run-ansible.sh
+
+# Node/Next.js build artifacts
+node_modules/
+web/.next/
+web/.turbo/
+web/out/
+web/.vercel/
+
+# Common Python cache/build outputs
+__pycache__/
+*.py[cod]
+.venv/
+build/
+dist/
+*.egg-info/

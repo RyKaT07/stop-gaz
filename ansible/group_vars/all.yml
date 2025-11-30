@@ -1,6 +1,9 @@
 ---
 # Global vars for deployment
-mosquitto_dest: /opt/stop-gaz
+stack_dest: /opt/cieplarnia
+web_next_public_api_base_url: "http://10.252.249.2:8000"
+web_public_origin: "http://10.252.249.2:3000"
+agg_allowed_origins: "{{ web_public_origin }},http://localhost:3000,http://web:3000"
 mosquitto_users:
   - name: aggregator
     password: "agregator123"
