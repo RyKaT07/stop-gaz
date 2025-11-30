@@ -35,11 +35,11 @@ client/ansible/
 
 ```ini
 [rpi_czujniki]
-czujnik ansible_host=10.252.249.X ansible_user=czujka
+czujnik ansible_connection=local ansible_host=127.0.0.1
 ```
 
-* Podmien `10.252.249.X` na IP swojej Raspi.
-* `ansible_user` to uzytkownik SSH (przyklad: `czujka`).
+* Domyslnie playbook wykonuje sie lokalnie (repo i Ansible sa na tej samej Malinie), wiec nie ma zadnego SSH.
+* Jezeli musisz uderzac w inna maszyne, podmien linie na `czujnik ansible_host=<ip> ansible_user=<user>` i usun `ansible_connection=local`.
 
 ## 3. Playbook – `client/ansible/playbook-okno-mqtt.yml`
 
